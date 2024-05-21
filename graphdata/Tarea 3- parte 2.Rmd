@@ -1,0 +1,35 @@
+---
+title: "Tarea 3 - Roman Nicole"
+author: "Nicole Roman"
+date: "2024-05-21"
+output: html_document
+---
+
+# Tarea 3 - parte 2 
+
+##### 3. Exportar the network: \*\*nx.write_gml(EliteNet, os.path.join("graphdata","EliteNet.gml"))\*\*
+4. Abra la red exportada en R y Gephi. Traza las gráficas.
+
+```{r}
+rm(list = ls()) # clear memory
+library(igraph)
+```
+
+```{r}
+dG=read.graph("EliteNet.gml", format = "gml")
+
+
+```
+
+```{r}
+summary(dG)
+
+```
+
+```{r}
+plot(dG, edge.arrow.size=.4,vertex.label=V(dG)$label,edge.curved=.1)
+
+```
+
+```{r}
+```

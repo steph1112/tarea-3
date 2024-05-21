@@ -1,0 +1,349 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        
+            <script>function neighbourhoodHighlight(params) {
+  // console.log("in nieghbourhoodhighlight");
+  allNodes = nodes.get({ returnType: "Object" });
+  // originalNodes = JSON.parse(JSON.stringify(allNodes));
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    highlightActive = true;
+    var i, j;
+    var selectedNode = params.nodes[0];
+    var degrees = 2;
+
+    // mark all nodes as hard to read.
+    for (let nodeId in allNodes) {
+      // nodeColors[nodeId] = allNodes[nodeId].color;
+      allNodes[nodeId].color = "rgba(200,200,200,0.5)";
+      if (allNodes[nodeId].hiddenLabel === undefined) {
+        allNodes[nodeId].hiddenLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+    var connectedNodes = network.getConnectedNodes(selectedNode);
+    var allConnectedNodes = [];
+
+    // get the second degree nodes
+    for (i = 1; i < degrees; i++) {
+      for (j = 0; j < connectedNodes.length; j++) {
+        allConnectedNodes = allConnectedNodes.concat(
+          network.getConnectedNodes(connectedNodes[j])
+        );
+      }
+    }
+
+    // all second degree nodes get a different color and their label back
+    for (i = 0; i < allConnectedNodes.length; i++) {
+      // allNodes[allConnectedNodes[i]].color = "pink";
+      allNodes[allConnectedNodes[i]].color = "rgba(150,150,150,0.75)";
+      if (allNodes[allConnectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[allConnectedNodes[i]].label =
+          allNodes[allConnectedNodes[i]].hiddenLabel;
+        allNodes[allConnectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // all first degree nodes get their own color and their label back
+    for (i = 0; i < connectedNodes.length; i++) {
+      // allNodes[connectedNodes[i]].color = undefined;
+      allNodes[connectedNodes[i]].color = nodeColors[connectedNodes[i]];
+      if (allNodes[connectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[connectedNodes[i]].label =
+          allNodes[connectedNodes[i]].hiddenLabel;
+        allNodes[connectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // the main node gets its own color and its label back.
+    // allNodes[selectedNode].color = undefined;
+    allNodes[selectedNode].color = nodeColors[selectedNode];
+    if (allNodes[selectedNode].hiddenLabel !== undefined) {
+      allNodes[selectedNode].label = allNodes[selectedNode].hiddenLabel;
+      allNodes[selectedNode].hiddenLabel = undefined;
+    }
+  } else if (highlightActive === true) {
+    // console.log("highlightActive was true");
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      // allNodes[nodeId].color = "purple";
+      allNodes[nodeId].color = nodeColors[nodeId];
+      // delete allNodes[nodeId].color;
+      if (allNodes[nodeId].hiddenLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].hiddenLabel;
+        allNodes[nodeId].hiddenLabel = undefined;
+      }
+    }
+    highlightActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    // console.log("Nothing was selected");
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        // allNodes[nodeId].color = {};
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function filterHighlight(params) {
+  allNodes = nodes.get({ returnType: "Object" });
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    filterActive = true;
+    let selectedNodes = params.nodes;
+
+    // hiding all nodes and saving the label
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = true;
+      if (allNodes[nodeId].savedLabel === undefined) {
+        allNodes[nodeId].savedLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+
+    for (let i=0; i < selectedNodes.length; i++) {
+      allNodes[selectedNodes[i]].hidden = false;
+      if (allNodes[selectedNodes[i]].savedLabel !== undefined) {
+        allNodes[selectedNodes[i]].label = allNodes[selectedNodes[i]].savedLabel;
+        allNodes[selectedNodes[i]].savedLabel = undefined;
+      }
+    }
+
+  } else if (filterActive === true) {
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = false;
+      if (allNodes[nodeId].savedLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].savedLabel;
+        allNodes[nodeId].savedLabel = undefined;
+      }
+    }
+    filterActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function selectNode(nodes) {
+  network.selectNodes(nodes);
+  neighbourhoodHighlight({ nodes: nodes });
+  return nodes;
+}
+
+function selectNodes(nodes) {
+  network.selectNodes(nodes);
+  filterHighlight({nodes: nodes});
+  return nodes;
+}
+
+function highlightFilter(filter) {
+  let selectedNodes = []
+  let selectedProp = filter['property']
+  if (filter['item'] === 'node') {
+    let allNodes = nodes.get({ returnType: "Object" });
+    for (let nodeId in allNodes) {
+      if (allNodes[nodeId][selectedProp] && filter['value'].includes((allNodes[nodeId][selectedProp]).toString())) {
+        selectedNodes.push(nodeId)
+      }
+    }
+  }
+  else if (filter['item'] === 'edge'){
+    let allEdges = edges.get({returnType: 'object'});
+    // check if the selected property exists for selected edge and select the nodes connected to the edge
+    for (let edge in allEdges) {
+      if (allEdges[edge][selectedProp] && filter['value'].includes((allEdges[edge][selectedProp]).toString())) {
+        selectedNodes.push(allEdges[edge]['from'])
+        selectedNodes.push(allEdges[edge]['to'])
+      }
+    }
+  }
+  selectNodes(selectedNodes)
+}</script>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            
+            
+            
+            
+            
+            
+
+        
+<center>
+<h1></h1>
+</center>
+
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+        <link
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6"
+          crossorigin="anonymous"
+        />
+        <script
+          src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"
+          integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf"
+          crossorigin="anonymous"
+        ></script>
+
+
+        <center>
+          <h1></h1>
+        </center>
+        <style type="text/css">
+
+             #mynetwork {
+                 width: 500px;
+                 height: 500px;
+                 background-color: #ffffff;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+
+             
+
+             
+        </style>
+    </head>
+
+
+    <body>
+        <div class="card" style="width: 100%">
+            
+            
+            <div id="mynetwork" class="card-body"></div>
+        </div>
+
+        
+        
+
+        <script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"color": "red", "id": "Romero", "label": "Romero", "multi": 1, "shape": "dot", "size": 10}, {"color": "red", "id": "Gra\u00f1a", "label": "Gra\u00f1a", "multi": 1, "shape": "dot", "size": 10}, {"color": "red", "id": "Miro Quesada", "label": "Miro Quesada", "multi": 1, "shape": "dot", "size": 10}, {"color": "red", "id": "Moreyra", "label": "Moreyra", "multi": 1, "shape": "dot", "size": 10}, {"color": "red", "id": "Fort", "label": "Fort", "multi": 1, "shape": "dot", "size": 10}, {"color": "red", "id": "De La Puente", "label": "De La Puente", "multi": 1, "shape": "dot", "size": 10}, {"color": "red", "id": "Onrubia", "label": "Onrubia", "multi": 1, "shape": "dot", "size": 10}, {"color": "red", "id": "Brescia", "label": "Brescia", "multi": 1, "shape": "dot", "size": 10}, {"color": "red", "id": "Nicolini", "label": "Nicolini", "multi": 1, "shape": "dot", "size": 10}, {"color": "red", "id": "Bentin", "label": "Bentin", "multi": 1, "shape": "dot", "size": 10}, {"color": "red", "id": "Benavides", "label": "Benavides", "multi": 1, "shape": "dot", "size": 10}, {"color": "red", "id": "Bustamante", "label": "Bustamante", "multi": 1, "shape": "dot", "size": 10}, {"color": "red", "id": "Woodman Pollit", "label": "Woodman Pollit", "multi": 1, "shape": "dot", "size": 10}, {"color": "red", "id": "Raffo", "label": "Raffo", "multi": 1, "shape": "dot", "size": 10}, {"color": "red", "id": "Piazza", "label": "Piazza", "multi": 1, "shape": "dot", "size": 10}, {"color": "blue", "id": "Berckemeyer", "label": "Berckemeyer", "multi": 0, "shape": "dot", "size": 10}, {"color": "red", "id": "Llosa Barber", "label": "Llosa Barber", "multi": 1, "shape": "dot", "size": 10}, {"color": "red", "id": "Rizo Patron", "label": "Rizo Patron", "multi": 1, "shape": "dot", "size": 10}, {"color": "red", "id": "Montori", "label": "Montori", "multi": 1, "shape": "dot", "size": 10}, {"color": "red", "id": "Wiese", "label": "Wiese", "multi": 1, "shape": "dot", "size": 10}, {"color": "red", "id": "Montero", "label": "Montero", "multi": 1, "shape": "dot", "size": 10}, {"color": "red", "id": "Beoutis Ledesma", "label": "Beoutis Ledesma", "multi": 1, "shape": "dot", "size": 10}, {"color": "blue", "id": "Michell", "label": "Michell", "multi": 0, "shape": "dot", "size": 10}, {"color": "red", "id": "Picaso", "label": "Picaso", "multi": 1, "shape": "dot", "size": 10}, {"color": "red", "id": "Sotomayor", "label": "Sotomayor", "multi": 1, "shape": "dot", "size": 10}, {"color": "red", "id": "Cilloniz", "label": "Cilloniz", "multi": 1, "shape": "dot", "size": 10}, {"color": "blue", "id": "Ferreyros", "label": "Ferreyros", "multi": 0, "shape": "dot", "size": 10}, {"color": "red", "id": "Wong Lu", "label": "Wong Lu", "multi": 1, "shape": "dot", "size": 10}, {"color": "red", "id": "Batievsky Spack", "label": "Batievsky Spack", "multi": 1, "shape": "dot", "size": 10}, {"color": "red", "id": "Matos Escalada", "label": "Matos Escalada", "multi": 1, "shape": "dot", "size": 10}, {"color": "blue", "id": "Galsky", "label": "Galsky", "multi": 0, "shape": "dot", "size": 10}, {"color": "blue", "id": "Lucioni", "label": "Lucioni", "multi": 0, "shape": "dot", "size": 10}, {"color": "red", "id": "Rodriguez Rodr\u00edguez", "label": "Rodriguez Rodr\u00edguez", "multi": 1, "shape": "dot", "size": 10}, {"color": "blue", "id": "Custer", "label": "Custer", "multi": 0, "shape": "dot", "size": 10}, {"color": "blue", "id": "Ikeda", "label": "Ikeda", "multi": 0, "shape": "dot", "size": 10}, {"color": "blue", "id": "Cogorno", "label": "Cogorno", "multi": 0, "shape": "dot", "size": 10}, {"color": "red", "id": "Arias Davila", "label": "Arias Davila", "multi": 1, "shape": "dot", "size": 10}]);
+                  edges = new vis.DataSet([{"from": "Romero", "to": "Gra\u00f1a", "width": 1}, {"from": "Romero", "to": "Miro Quesada", "width": 1}, {"from": "Romero", "to": "Moreyra", "width": 1}, {"from": "Romero", "to": "Fort", "width": 1}, {"from": "Romero", "to": "De La Puente", "width": 1}, {"from": "Romero", "to": "Onrubia", "width": 1}, {"from": "Romero", "to": "Brescia", "width": 1}, {"from": "Romero", "to": "Nicolini", "width": 1}, {"from": "Romero", "to": "Bentin", "width": 1}, {"from": "Romero", "to": "Benavides", "width": 1}, {"from": "Romero", "to": "Bustamante", "width": 1}, {"from": "Romero", "to": "Woodman Pollit", "width": 1}, {"from": "Romero", "to": "Raffo", "width": 1}, {"from": "Romero", "to": "Piazza", "width": 1}, {"from": "Romero", "to": "Berckemeyer", "width": 1}, {"from": "Romero", "to": "Llosa Barber", "width": 1}, {"from": "Romero", "to": "Rizo Patron", "width": 1}, {"from": "Romero", "to": "Montori", "width": 1}, {"from": "Gra\u00f1a", "to": "Miro Quesada", "width": 1}, {"from": "Gra\u00f1a", "to": "Fort", "width": 1}, {"from": "Gra\u00f1a", "to": "De La Puente", "width": 1}, {"from": "Gra\u00f1a", "to": "Wiese", "width": 1}, {"from": "Gra\u00f1a", "to": "Montero", "width": 1}, {"from": "Gra\u00f1a", "to": "Benavides", "width": 1}, {"from": "Gra\u00f1a", "to": "Bustamante", "width": 1}, {"from": "Gra\u00f1a", "to": "Piazza", "width": 1}, {"from": "Gra\u00f1a", "to": "Beoutis Ledesma", "width": 1}, {"from": "Gra\u00f1a", "to": "Michell", "width": 1}, {"from": "Miro Quesada", "to": "Fort", "width": 1}, {"from": "Miro Quesada", "to": "De La Puente", "width": 1}, {"from": "Miro Quesada", "to": "Wiese", "width": 1}, {"from": "Miro Quesada", "to": "Montero", "width": 1}, {"from": "Miro Quesada", "to": "Benavides", "width": 1}, {"from": "Miro Quesada", "to": "Bustamante", "width": 1}, {"from": "Miro Quesada", "to": "Piazza", "width": 1}, {"from": "Miro Quesada", "to": "Beoutis Ledesma", "width": 1}, {"from": "Miro Quesada", "to": "Michell", "width": 1}, {"from": "Moreyra", "to": "Fort", "width": 1}, {"from": "Moreyra", "to": "De La Puente", "width": 1}, {"from": "Moreyra", "to": "Wiese", "width": 1}, {"from": "Moreyra", "to": "Onrubia", "width": 1}, {"from": "Moreyra", "to": "Brescia", "width": 1}, {"from": "Moreyra", "to": "Montero", "width": 1}, {"from": "Moreyra", "to": "Picaso", "width": 1}, {"from": "Moreyra", "to": "Bentin", "width": 1}, {"from": "Moreyra", "to": "Bustamante", "width": 1}, {"from": "Moreyra", "to": "Raffo", "width": 1}, {"from": "Moreyra", "to": "Berckemeyer", "width": 1}, {"from": "Moreyra", "to": "Rizo Patron", "width": 1}, {"from": "Moreyra", "to": "Montori", "width": 1}, {"from": "Moreyra", "to": "Sotomayor", "width": 1}, {"from": "Fort", "to": "De La Puente", "width": 1}, {"from": "Fort", "to": "Onrubia", "width": 1}, {"from": "Fort", "to": "Brescia", "width": 1}, {"from": "Fort", "to": "Nicolini", "width": 1}, {"from": "Fort", "to": "Picaso", "width": 1}, {"from": "Fort", "to": "Bentin", "width": 1}, {"from": "Fort", "to": "Benavides", "width": 1}, {"from": "Fort", "to": "Bustamante", "width": 1}, {"from": "Fort", "to": "Woodman Pollit", "width": 1}, {"from": "Fort", "to": "Raffo", "width": 1}, {"from": "Fort", "to": "Piazza", "width": 1}, {"from": "Fort", "to": "Llosa Barber", "width": 1}, {"from": "Fort", "to": "Beoutis Ledesma", "width": 1}, {"from": "Fort", "to": "Sotomayor", "width": 1}, {"from": "Fort", "to": "Cilloniz", "width": 1}, {"from": "De La Puente", "to": "Wiese", "width": 1}, {"from": "De La Puente", "to": "Montero", "width": 1}, {"from": "De La Puente", "to": "Benavides", "width": 1}, {"from": "De La Puente", "to": "Bustamante", "width": 1}, {"from": "De La Puente", "to": "Piazza", "width": 1}, {"from": "De La Puente", "to": "Berckemeyer", "width": 1}, {"from": "De La Puente", "to": "Beoutis Ledesma", "width": 1}, {"from": "De La Puente", "to": "Rizo Patron", "width": 1}, {"from": "De La Puente", "to": "Sotomayor", "width": 1}, {"from": "Wiese", "to": "Montero", "width": 1}, {"from": "Wiese", "to": "Berckemeyer", "width": 1}, {"from": "Wiese", "to": "Beoutis Ledesma", "width": 1}, {"from": "Wiese", "to": "Rizo Patron", "width": 1}, {"from": "Wiese", "to": "Sotomayor", "width": 1}, {"from": "Onrubia", "to": "Brescia", "width": 1}, {"from": "Onrubia", "to": "Nicolini", "width": 1}, {"from": "Onrubia", "to": "Bentin", "width": 1}, {"from": "Onrubia", "to": "Woodman Pollit", "width": 1}, {"from": "Onrubia", "to": "Raffo", "width": 1}, {"from": "Onrubia", "to": "Berckemeyer", "width": 1}, {"from": "Onrubia", "to": "Llosa Barber", "width": 1}, {"from": "Onrubia", "to": "Montori", "width": 1}, {"from": "Brescia", "to": "Bentin", "width": 1}, {"from": "Brescia", "to": "Raffo", "width": 1}, {"from": "Brescia", "to": "Berckemeyer", "width": 1}, {"from": "Brescia", "to": "Montori", "width": 1}, {"from": "Nicolini", "to": "Bentin", "width": 1}, {"from": "Nicolini", "to": "Woodman Pollit", "width": 1}, {"from": "Nicolini", "to": "Raffo", "width": 1}, {"from": "Nicolini", "to": "Llosa Barber", "width": 1}, {"from": "Nicolini", "to": "Rizo Patron", "width": 1}, {"from": "Montero", "to": "Picaso", "width": 1}, {"from": "Montero", "to": "Bustamante", "width": 1}, {"from": "Montero", "to": "Beoutis Ledesma", "width": 1}, {"from": "Montero", "to": "Ferreyros", "width": 1}, {"from": "Picaso", "to": "Bustamante", "width": 1}, {"from": "Picaso", "to": "Sotomayor", "width": 1}, {"from": "Picaso", "to": "Cilloniz", "width": 1}, {"from": "Bentin", "to": "Woodman Pollit", "width": 1}, {"from": "Bentin", "to": "Raffo", "width": 1}, {"from": "Bentin", "to": "Berckemeyer", "width": 1}, {"from": "Bentin", "to": "Llosa Barber", "width": 1}, {"from": "Bentin", "to": "Montori", "width": 1}, {"from": "Bentin", "to": "Ferreyros", "width": 1}, {"from": "Bentin", "to": "Wong Lu", "width": 1}, {"from": "Benavides", "to": "Bustamante", "width": 1}, {"from": "Benavides", "to": "Piazza", "width": 1}, {"from": "Bustamante", "to": "Piazza", "width": 1}, {"from": "Bustamante", "to": "Montori", "width": 1}, {"from": "Bustamante", "to": "Cilloniz", "width": 1}, {"from": "Bustamante", "to": "Ferreyros", "width": 1}, {"from": "Woodman Pollit", "to": "Raffo", "width": 1}, {"from": "Woodman Pollit", "to": "Berckemeyer", "width": 1}, {"from": "Woodman Pollit", "to": "Llosa Barber", "width": 1}, {"from": "Raffo", "to": "Berckemeyer", "width": 1}, {"from": "Raffo", "to": "Llosa Barber", "width": 1}, {"from": "Raffo", "to": "Montori", "width": 1}, {"from": "Piazza", "to": "Llosa Barber", "width": 1}, {"from": "Piazza", "to": "Beoutis Ledesma", "width": 1}, {"from": "Berckemeyer", "to": "Llosa Barber", "width": 1}, {"from": "Berckemeyer", "to": "Rizo Patron", "width": 1}, {"from": "Berckemeyer", "to": "Montori", "width": 1}, {"from": "Berckemeyer", "to": "Sotomayor", "width": 1}, {"from": "Llosa Barber", "to": "Beoutis Ledesma", "width": 1}, {"from": "Rizo Patron", "to": "Sotomayor", "width": 1}, {"from": "Montori", "to": "Cilloniz", "width": 1}, {"from": "Sotomayor", "to": "Cilloniz", "width": 1}, {"from": "Batievsky Spack", "to": "Matos Escalada", "width": 1}, {"from": "Batievsky Spack", "to": "Galsky", "width": 1}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {
+    "configure": {
+        "enabled": false
+    },
+    "edges": {
+        "color": {
+            "inherit": true
+        },
+        "smooth": {
+            "enabled": true,
+            "type": "dynamic"
+        }
+    },
+    "interaction": {
+        "dragNodes": true,
+        "hideEdgesOnDrag": false,
+        "hideNodesOnDrag": false
+    },
+    "physics": {
+        "enabled": true,
+        "stabilization": {
+            "enabled": true,
+            "fit": true,
+            "iterations": 1000,
+            "onlyDynamicEdges": false,
+            "updateInterval": 50
+        }
+    }
+};
+
+                  
+
+
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+
+                  
+
+
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+    </body>
+</html>
